@@ -1,0 +1,157 @@
+#!/bin/fish
+
+set SKEL_FILES_PATH "$HOME/.local/share/skel"
+
+# override fish's command not found messages
+function fish_command_not_found
+    echo -e "\e[1mError while trying to run the following command\e[0m:" >&2
+    echo "--> $argv" >&2
+end
+
+function mergevars
+    argparse i -- $argv
+    set file_string $argv
+
+    # get all marked fields in the file
+    for match in (string match -ra -- '\{\{\{.+?\}\}\}' $file_string)
+        set field (string trim -c '{}' -- $match)
+        #  we need to reset repl for each iteration so we can test for a field
+        #  that evaluated to nothing
+        set repl
+
+        # if i flag was passed, skip on "custom" fields
+        if set -q _flag_i && [ "$field" = custom ]
+            continue
+        end
+
+        set repl (eval printf "%s\n" $field)
+        test -z "$repl" && echo -e "\e[1mWarning\e[0m: \"$field\" evaluated to empty string." >&2
+        set file_string (string replace -- "$match" "$(string join -- \n $repl)" $file_string)
+    end
+
+    # print the result
+    string join -- \n $file_string
+end
+
+function inject_custom
+    # inject the contents of custom_file into target_lines at the specified point
+    argparse 'c=' -- $argv
+
+    set custom_file $_flag_c
+    set target_lines $argv
+
+    # do the replacing
+    for line in $target_lines
+        if string match -req -- '^\s*\{\{\{custom\}\}\}\s*$' $line
+            for custom_line in (cat $custom_file)
+                echo $custom_line
+            end
+        else
+            echo $line
+        end
+    end
+end
+
+function safe_write -a write_file
+
+    # only write to file if there were no errors
+    set target_lines $argv[2..-1]
+
+    if [ -z "$target_lines" ]
+        echo -e "\tSkipping merge for \e[1m$write_file\e[0m..." >&2
+        return 1
+    else
+        mkdir -p (dirname "$write_file")
+        string join -- \n $target_lines >"$write_file" || return 1
+    end
+end
+
+function get_meta_line -a line field
+    string match -r -- '(?<=%-'$field':).+?(?=-%)' "$line"
+end
+
+function process_skel -a skel_file
+    # parse location line
+    set file_string (cat $skel_file)
+    if not set location (get_meta_line $file_string[1] LOCATION)
+        echo -e "\e[1m$skel_file\e[0m has no line specifying its target location." >&2
+        return 1
+    end
+    # pop location line
+    set file_string $file_string[2..]
+
+    # pop custom line if it exists
+    if set custom (get_meta_line $file_string[1] CUSTOM)
+        set file_string $file_string[2..]
+    end
+
+    # get custom variables
+    while true
+        if set variable (get_meta_line $file_string[1] VARIABLE)
+            set -x (string split -f1 = "$variable") (eval printf "%s\n" (string split -m1 -f2 = "$variable")) || return 1
+            set file_string $file_string[2..]
+        else
+            break
+        end
+    end
+
+    set permissions (stat -c "%a" "$skel_file")
+    # resolve variables in string
+    set location (eval echo -n $location)
+    set custom (eval echo -n $custom)
+
+    # variable substitution
+    if [ -z "$custom" ]
+        set file_string (mergevars -- $file_string) || return 1
+    else
+        # check if a custom file actually exists
+        if [ ! -f "$custom" ]
+            echo -e "\e[1m$skel_file\e[0m points to a custom file that does not exist." >&2
+            echo -e "\tSkipping custom file merging..." >&2
+            # getting rid of custom fields as they will otherwise stay as is
+            # inside the skel file
+            set file_string (string replace "{{{custom}}}" "" -- $file_string) # no return 1 here, this is allowed to fail
+        else
+            set file_string (inject_custom -c $custom -- $file_string) || return 1
+        end
+        set file_string (mergevars -i -- $file_string) || return 1
+    end
+
+    # write $file_string to file
+    safe_write "$location" $file_string || return 1
+    # copy permissions from skel file to destination
+    chmod $permissions "$location" || return 1
+end
+
+function prompt -a file
+    read -P "About to merge $file. Continue? [Y/n] " -n 1 answer
+    set answer (string lower -- $answer)
+    test -z "$answer"; and set answer y
+    if [ "$answer" = y ]
+        return 0
+    else
+        return 1
+    end
+end
+
+function main
+    argparse -n merge-configs p/prompt -- "$argv" || return 1
+
+    if [ ! -d "$SKEL_FILES_PATH" ]
+        echo -e "\e[1m$SKEL_FILES_PATH\e[0m is not a valid path..." >&2
+        return 1
+    end
+
+    for file in "$SKEL_FILES_PATH"/*
+        if [ -n "$_flag_p" ]
+            prompt "$file" || continue
+        end
+
+        process_skel "$file"
+    end
+end
+
+if not status is-interactive
+    main $argv
+    exit $status
+end
