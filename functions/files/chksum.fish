@@ -1,4 +1,6 @@
-function chksum
+function chksum -d "Check a file against a hash provided on the command line"
+    # -h/--hash: type of hash, this must match an executable named ${hash}sum in
+    #            $PATH (default: sha256)
     argparse -n 'chksum' 'h/hash=' -- $argv || return
 
     if [ ! (count $argv) -eq 2  -o ! -f "$argv[-1]" ]
@@ -6,14 +8,14 @@ function chksum
         return
     end
 
-    set -a _flag_hash sha256
-    set hash_exc {$_flag_hash[1]}sum
+    test -z "$_flag_hash" && set -f _flag_hash sha256
+    set -f hash_exc {$_flag_hash}sum
     if not command -q "$hash_exc"
         echo "No program $hash_exc found in \$PATH." >/dev/stderr
         return 1
     end
 
-    set filehash ($_flag_hash[1]sum "$argv[-1]" | awk '{print $1}') || return
+    set -f filehash ($_flag_hash[1]sum "$argv[-1]" | awk '{print $1}') || return
 
     if [ (string lower "$filehash") = (string lower "$argv[-2]") ]
         echo "OK: Checksum matches." > /dev/stderr

@@ -1,4 +1,3 @@
-function plz
-    commandline -r "sudo $history[1]"
-    commandline -f execute
+function pls -d "Prefix sudo to the commandline or the last run command"
+    __fish_modify_commandline -c pls -p sudo
 end

@@ -10,19 +10,21 @@ functions/files/frename.fish
 functions/files/glob.fish
 functions/files/rnm.fish
 functions/files/xtr.fish
-functions/navigation/__fish_cd_navigation.fish
 functions/navigation/__fish_cdp_preview.fish
 functions/navigation/cd.fish
 functions/navigation/cdb.fish
+functions/navigation/cdive.fish
 functions/navigation/cdp.fish
 functions/python/pyproj.fish
 functions/python/pyreqs.fish
-functions/shell/__fish_pls_bind.fish
+functions/shell/__fish_modify_commandline.fish
+functions/shell/away.fish
 functions/shell/fish_color_test.fish
 functions/shell/imath.fish
+functions/shell/lass.fish
 functions/shell/longless.fish
 functions/shell/pls.fish
 functions/shell/randstring.fish
+functions/shell/shoo.fish
 
 scripts/merge-configs
-scripts/pass-get
