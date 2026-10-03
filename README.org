@@ -1,0 +1,75 @@
+#+title: fishface - a collection of awesome code for the fish shell
+
+I mean, I think it's pretty awesome. This is a collection of fish functions and scripts that I think are useful and mature enough to share with others. Fish provides a pretty good shell scripting language that makes it comparatively easy to write extensions to your shell. It doesn't get rid of all the idiosyncrasies of the Unix shell but it makes wrangling with them reasonably easy and its doesn't end up looking like a garbled mess of /dev/urandom in the process. As a result, using some sort of "shell framework" becomes more or less redundant. So this isn't that. While most of this code is ready to be used as-is, the idea is more to inspire you to write your own extensions to your shell.
+
+- /functions/ are self-contained functions, intended to be copied to $__fish_config_dir/functions; required executables are mentioned here but not checked upon execution of the script
+- /scripts/ are collections of fish code complex enough to consist of more than one function, intended to be copied to a local directory in your $PATH; required executables are checked upon execution and an error will be printed if they cannot be found in $PATH
+  
+* Functions
+** arch-utils
+   Utility functions intended to help you manage an Arch Linux or any other pacman based system
+*** arch-pkg-clean
+    Clean up the pacman package cache.
+*** arch-pkg-reqs
+    Process a list of packages your system configuration depends on.
+** aur-helpers
+   Functions to access the Arch User Repository. Like auracle or pacaur, but much simpler.
+*** aurclone
+    Download (i.e. clone with git) a PKGBUILD and any accompanying files from the AUR
+*** aurinfo
+    Retrieve information about a specific user-submitted package from the AUR and display it
+*** aurmake
+    Build an AUR package
+*** auroutd
+    List all AUR packages installed on the system, for which updates exist upstream
+*** aursearch
+    Search the AUR for packages
+** files
+   Convenience functions to help deal with files and file structures. These implement some functionality commonly found in file managers.
+*** chksum
+    Check a file against a hash provided on the command line
+*** frename
+    Rename files in bulk making use of the power of fish's string builtin
+*** glob
+    Filter files and file paths
+*** rnm
+    Rename files in bulk using through your text editor
+*** xtr
+    Extract an archive, create a directory for its contents if it contains more than one file at the top level
+** navigation
+   Functions to help you get around the file system
+*** cd
+    A modified cd.fish that accepts files as its argument and will switch to their parent directories
+*** cdb
+    Create, manage and switch to bookmarks, each being a location somewhere on the system
+*** cdive
+    Move to parent and child directories, like 'cd ..' plus return trip
+*** cdp
+    Navigate directories through an fzf interface
+** python
+   Functions that help organise a Python project
+*** pyproj
+    Create, re-use and activate a dedicated virtual environment for a Git-managed Python project
+*** pyreqs
+    Install/Upgrade dependencies from a file and keep their hashes in a requirements.txt file up to date
+** shell
+   Functions that extend shell functionality to further improve your overall fish experience
+*** __fish_modify_commandline
+    Helper function that manipulates either the previous or the current commandline
+*** away/shoo
+    Run a command and immediately disown it, shoo does the same for the previous command
+*** fish_color_test
+    Give a visual representation of all fish color variables
+*** imath
+    Interactive calculator-like interface for the math builtin
+*** lass
+    Pipe the previously run command to less or add piping to less to the current commandline
+*** longless
+    Pipe to less if the output doesn't fit the screen, otherwise do nothing
+*** pls
+    Prefix sudo to the commandline or the last run command
+*** randstring
+    Generate a random string
+    
+* Scripts
+** merge-configs
